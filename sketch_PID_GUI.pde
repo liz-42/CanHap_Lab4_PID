@@ -90,7 +90,7 @@ int iter = 0;
 
 /// PID stuff
 
-float P = 0.0;
+float P = 0;
 // for I
 float I = 0;
 float cumerrorx = 0;
@@ -108,7 +108,13 @@ float buffy = 0;
 float smoothing = 0.80;
 
 float xr = 0;
-float yr = 0;
+float yr = -0.3;
+
+// stuff I added for path
+float counter = 0;
+boolean first_move = false;
+float xr_next = 0;
+float yr_next = 0;
 
 // checking everything run in less than 1ms
 long timetaken= 0;
@@ -228,7 +234,7 @@ void setup(){
    *      linux:        haplyBoard = new Board(this, "/dev/ttyUSB0", 0);
    *      mac:          haplyBoard = new Board(this, "/dev/cu.usbmodem1411", 0);
    */ 
-  haplyBoard          = new Board(this, "COM3", 0);
+  haplyBoard          = new Board(this, "COM4", 0);
   widgetOne           = new Device(widgetOneID, haplyBoard);
   pantograph          = new Pantograph();
   
@@ -263,10 +269,10 @@ void setup(){
 }
 /* end setup section ***************************************************************************************************/
 
-public void RandomPosition(int theValue) {
-      xr = random(-0.5,0.5);
-    yr = random(-0.5,0.5);
-}
+//public void RandomPosition(int theValue) {
+//      xr = random(-0.5,0.5);
+//    yr = random(-0.5,0.5);
+//}
 public void ResetIntegrator(int theValue) {
     cumerrorx= 0;
     cumerrory= 0;
@@ -282,6 +288,22 @@ public void ResetDevice(int theValue) {
 /// Antoine: this is specific to qwerty keyboard layout, you may want to adapt
 
 void keyPressed() {
+  // key to change to my chosen values easily - start off at lower set so the end effector
+  // doesn't shoot out too far, then press z to get the nicer set that follows the path better
+  if (key == 'x') {
+    P = 0.015;
+    I = 0.06;
+    D = 0.68;
+    cumerrorx= 0;
+    cumerrory= 0;
+  }
+  if (key == 'z') {
+    P = 0.08;
+    I = 0.14;
+    D = 0.12;
+    cumerrorx= 0;
+    cumerrory= 0;
+  }
   if (key == 'q') {
     P += 0.01;
   } else if (key == 'a') {
@@ -318,10 +340,14 @@ void keyPressed() {
   else if (key == 'i') {
     widgetOne.device_set_parameters();
   }
+  // now b controls random looptime
   else if (key == 'b') {
-    xr = random(-0.5,0.5);
-    yr = random(-0.5,0.5);
+    looptime = int(random(75,600));
   }
+  //else if (key == 'b') {
+  //  xr = random(-0.5,0.5);
+  //  yr = random(-0.5,0.5);
+  //}
 }
 
 
@@ -331,7 +357,101 @@ void draw(){
   if(renderingForce == false){
     background(255); 
     update_animation(angles.x*radsPerDegree, angles.y*radsPerDegree, posEE.x, posEE.y);
+    counter = counter + 1; 
+    //println(counter);
     
+    // draw the star
+    line(500, 260, 540, 320);
+    stroke(126);
+    line(540, 320, 620, 320);
+    stroke(126);
+    line(620, 320, 560, 380);
+    stroke(126);
+    line(560, 380, 620, 440);
+    stroke(126);
+    line(620, 440, 500, 410);
+    stroke(126);
+    line(500, 410, 380, 440);
+    stroke(126);
+    line(380, 440, 440, 380);
+    stroke(126);
+    line(440, 380, 380, 320);
+    stroke(126);
+    line(380, 320, 460, 320);
+    stroke(126);
+    line(460, 320, 500, 260);
+    stroke(126);
+    
+    
+    if (first_move == false) {
+      xr = 0;
+      yr = -0.3;
+      xr_next = 0.13;
+      yr_next = -0.1;
+      first_move = true;
+    }
+    else if (xr >= 0.125 && xr <= 0.135 && yr >= -0.15 && yr <= -0.095) {
+      xr = 0.13;
+      yr = -0.1;
+      xr_next = 0.4;
+      yr_next = -0.1;
+    }
+    else if (xr >= 0.395 && xr <= 0.405 && yr >= -0.15 && yr <= -0.095) {
+      xr = 0.4;
+      yr = -0.1;
+      xr_next = 0.2;
+      yr_next = 0.1;
+    }
+    else if (xr >= 0.195 && xr <= 0.205 && yr >= 0.095 && yr <= 0.15) {
+      xr = 0.2;
+      yr = 0.1;
+      xr_next = 0.4;
+      yr_next = 0.3;
+    }
+    else if (xr >= 0.395 && xr <= 0.405 && yr >= 0.295 && yr <= 0.35) {
+      xr = 0.4;
+      yr = 0.3;
+      xr_next = 0;
+      yr_next = 0.2;
+    }
+    else if (xr >= 0 && xr <= 0.005 && yr >= 0.195 && yr <= 0.25) {
+      xr = 0;
+      yr = 0.2;
+      xr_next = -0.4;
+      yr_next = 0.3;
+    }
+    else if (xr >= -0.405 && xr <= -0.395 && yr >= 0.295 && yr <= 0.35) {
+      xr = -0.4;
+      yr = 0.3;
+      xr_next = -0.2;
+      yr_next = 0.1;
+    }
+    else if (xr >= -0.205 && xr <= -0.195 && yr >= 0.095 && yr <= 0.15) {
+      xr = -0.2;
+      yr = 0.1;
+      xr_next = -0.4;
+      yr_next = -0.1;
+    }
+    else if (xr >= -0.405 && xr <= -0.395 && yr >= -0.15 && yr <= -0.095) {
+      xr = -0.4;
+      yr = -0.1;
+      xr_next = -0.13;
+      yr_next = -0.1;
+    }
+    // fix this
+    else if (xr >= -0.135 && xr <= -0.125 && yr >= -0.15 && yr <= -0.095) {
+      xr = -0.13;
+      yr = -0.1;
+      xr_next = 0;
+      yr_next = -0.3;
+    }
+    else if (xr >= -0.995 && xr <= 0.005 && yr >= -0.35 && yr <= -0.295) {
+      xr = 0;
+      yr = -0.3;
+      first_move = false;
+    }
+    xr = lerp(xr, xr_next, 0.05);
+    yr = lerp(yr, yr_next, 0.05);
     
   }
 }
